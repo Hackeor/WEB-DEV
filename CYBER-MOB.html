@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>CYBER REFLEX – MOBILE</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+    body {
+      background: radial-gradient(circle at center, #0a0f1f, #02030a);
+      overflow: hidden;
+      font-family: 'Segoe UI', sans-serif;
+      color: #fff;
+    }
+    canvas { display: block; }
+
+    #ui {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 10;
+      font-size: 13px;
+      letter-spacing: 1px;
+    }
+
+    #ui span { display: block; margin-bottom: 4px; }
+
+    #slowBtn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 2px solid #00eaff;
+      background: rgba(0,234,255,0.15);
+      color: #00eaff;
+      font-weight: bold;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 15;
+      user-select: none;
+    }
+
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 20;
+    }
+
+    #overlay h1 {
+      font-size: 36px;
+      margin-bottom: 20px;
+      letter-spacing: 4px;
+      color: #00eaff;
+    }
+
+    #overlay button {
+      padding: 12px 28px;
+      background: transparent;
+      border: 2px solid #00eaff;
+      color: #00eaff;
+      cursor: pointer;
+      font-size: 15px;
+      letter-spacing: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="overlay">
+  <h1>CYBER REFLEX</h1>
+  <button onclick="startGame()">TAP TO START</button>
+</div>
+
+<div id="ui">
+  <span id="score">SCORE: 0</span>
+  <span id="time">TIME: READY</span>
+</div>
+
+<div id="slowBtn">SLOW</div>
+<canvas id="game"></canvas>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+canvas.width = innerWidth;
+canvas.height = innerHeight;
+
+let running = false;
+let timeScale = 1;
+let score = 0;
+
+const player = { x: canvas.width/2, y: canvas.height/2, r: 12 };
+const enemies = [];
+
+function spawnEnemy(){
+  const a = Math.random()*Math.PI*2;
+  const d = Math.max(canvas.width, canvas.height);
+  enemies.push({
+    x: player.x + Math.cos(a)*d,
+    y: player.y + Math.sin(a)*d,
+    r: 10,
+    speed: 1.4 + Math.random()*2
+  });
+}
+
+function drawPlayer(){
+  ctx.beginPath();
+  ctx.arc(player.x, player.y, player.r, 0, Math.PI*2);
+  ctx.fillStyle = '#00eaff';
+  ctx.shadowBlur = 18;
+  ctx.shadowColor = '#00eaff';
+  ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
+function drawEnemies(){
+  enemies.forEach(e=>{
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.r, 0, Math.PI*2);
+    ctx.fillStyle = '#ff0033';
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = '#ff0033';
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+}
+
+function updateEnemies(){
+  enemies.forEach(e=>{
+    const dx = player.x - e.x;
+    const dy = player.y - e.y;
+    const dist = Math.hypot(dx, dy);
+    e.x += (dx/dist) * e.speed * timeScale;
+    e.y += (dy/dist) * e.speed * timeScale;
+    if(dist < player.r + e.r) gameOver();
+  });
+}
+
+function bg(){
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+}
+
+function loop(){
+  if(!running) return;
+  requestAnimationFrame(loop);
+  bg();
+  drawPlayer();
+  drawEnemies();
+  updateEnemies();
+  score += 1 * timeScale;
+  scoreEl.innerText = 'SCORE: ' + Math.floor(score);
+}
+
+const scoreEl = document.getElementById('score');
+const timeEl = document.getElementById('time');
+
+canvas.addEventListener('touchmove', e=>{
+  const t = e.touches[0];
+  player.x = t.clientX;
+  player.y = t.clientY;
+});
+
+const slowBtn = document.getElementById('slowBtn');
+slowBtn.addEventListener('touchstart', ()=>{
+  timeScale = 0.35;
+  timeEl.innerText = 'TIME: ACTIVE';
+});
+slowBtn.addEventListener('touchend', ()=>{
+  timeScale = 1;
+  timeEl.innerText = 'TIME: READY';
+});
+
+function startGame(){
+  overlay.style.display = 'none';
+  running = true;
+  score = 0;
+  enemies.length = 0;
+  setInterval(spawnEnemy, 900);
+  loop();
+}
+
+function gameOver(){
+  running = false;
+  overlay.style.display = 'flex';
+  overlay.querySelector('h1').innerText = 'GAME OVER';
+}
+
+window.onresize = ()=>{
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+};
+</script>
+</body>
+</html>
